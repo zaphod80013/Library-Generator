@@ -8,13 +8,13 @@ import urllib.parse
 class Generator:
 
     def __init__(self):
-        self.program            =  os.path.basename(sys.argv[0])              # program name
-        self.version            = '1.0.0'                                     # program version
-        self.debug              =   True                                      # Debug indentation etc.
-        self.recursionDepth     =   0                                         # Recursion Depth  
-        self.divDepth           =   0                                         # <div> nesting Depth 
-        self.indentation        =   0                                         # Indentation level for readable html
-        self.id                 =   0                                         # Entity identifer used to uniquly reference element
+        self.program            =  os.path.basename(sys.argv[0])             # program name
+        self.version            = '1.0.0'                                    # program version
+        self.debug              =  False                                     # Debug indentation etc.
+        self.recursionDepth     =  0                                         # Recursion Depth  
+        self.divDepth           =  0                                         # <div> nesting Depth 
+        self.indentation        =  0                                         # Indentation level for readable html
+        self.id                 =  0                                         # Entity identifer used to uniquly reference element
 
         #
         # Script must be run from the directory to be indexed
@@ -47,7 +47,8 @@ class Generator:
         self.northBgColor       = "#aaeeaa"               
         self.westBgColor        = "#aaddaa" 
         self.eastBgColor        = "#e0e0e8"               
-        self.frameBgColor       = "%23aaddaa"               
+        self.frameBgColor       = "%23aaddaa" 
+        self.padding            = 3.0              
         #
         # Pre-defined Height & Width of various components
         #
@@ -187,8 +188,6 @@ class Generator:
         self.openBrace()
         self.write("var y = x.id+'B';")
         self.write("var z = x.id+'A';")
-        self.write("if(event.target.id == z)")
-        self.openBrace()
         self.write("y = document.getElementById(y);")
         self.write("z = document.getElementById(z);")
         self.write("if(y.style.display == 'none')")
@@ -202,14 +201,39 @@ class Generator:
         self.write("z.src='images/tree_closed.gif';")
         self.closeBrace()
         self.closeBrace()
+        self.write("event.stopPropagation();")
         self.closeBrace()
-        self.write("return false;")
+
+    def writeToggleDisplayFunction2(self):
+        self.write("function toggleDisplay2(x)")
+        self.openBrace()
+        self.write("if(!(x.id == undefined))")
+        self.openBrace()
+        self.write("var y = x.id+'B';")
+        self.write("var z = x.id+'A';")
+        self.write("y = document.getElementById(y);")
+        self.write("z = document.getElementById(z);")
+        self.write("if(y.style.display == 'none')")
+        self.openBrace()
+        self.write("y.style.display='block';")
+        self.write("z.src='images/tree_open.gif';")
         self.closeBrace()
+        self.write("else")
+        self.openBrace()
+        self.write("y.style.display='none';")
+        self.write("z.src='images/tree_closed.gif';")
+        self.closeBrace()
+        self.closeBrace()
+        self.write("event.stopPropagation();")
+        self.closeBrace()
+
 
     def writeDisplayFunction(self):
         self.write("function display(x)")
         self.openBrace()
+        #self.write("alert('display');")
         self.write("document.getElementById('page').src=atob(x);")  
+        self.write("event.stopPropagation();")
         self.closeBrace()
 
     def writeDisplayMarkdownFunction(self):
@@ -327,24 +351,24 @@ class Generator:
 
     def writeSubSectionStyle(self):
         self.openStyle('.subSection')       
-        self.write( "margin-left:       3%;")
+        #self.write( "margin-left:       5%;")
         self.closeStyle()
         self.openStyle('.subSection span')       
         self.write( "font-size:         0.95em;")
-        self.write( "padding-left:       3.2%;")
+        #self.write( "padding-left:       3.2%;")
         self.closeStyle()
 
     def writeEntryStyle(self):
         self.openStyle('.entry')       
         self.write( "font-size:         0.95em;")
-        self.write( "margin-left:       3.2%;")
+        #self.write( "paddingleft:       3.2%;")
         self.write( "overflow-x:        hidden;")
         self.write( "white-space:       nowrap;")
         self.write( "text-overflow:     ellipsis;")
         self.closeStyle()
         self.openStyle('.entry span')       
         self.write( "font-size:         0.95em;")
-        self.write( "margin-left:       3.2%;")
+        self.write( "padding-left:      3.2%;")
         self.closeStyle()
  
     def seperator(self):
@@ -368,6 +392,7 @@ class Generator:
         self.writeConfigFunction()
         self.seperator()
         self.writeToggleDisplayFunction()
+        self.writeToggleDisplayFunction2()
         self.writeDisplayMarkdownFunction()
         self.seperator()
         self.writeDisplayFunction()
@@ -422,36 +447,49 @@ class Generator:
         name = name.replace(u' – ',', ')
         return name
 
-    def directorySection(self,id,path):
+    def directorySection(self,id,path,padding):
         name = self.sanitizeName(os.path.basename(path))
-        self.openDiv(f"<div id='{id}' onclick='toggleDisplay(this);' class='section' >")
+        self.openDiv(f"<div id='{id}' onclick='toggleDisplay(this);' class='subsection' style='padding-left:{padding}%;'>")
         self.write(f"<img id='{id}A' src='./images/tree_closed.gif'/><span>{name}</span>")
         self.openDiv(f"<div id='{id}B' style='display:none;'>")
 
-    def markdownSection(self,id,path):
+        # self.openDiv(f"<div id='{id}' onclick='toggleDisplay(this),true;' class='section' >")
+        # self.write(f'<script>document.getElementById("{id}").addEventListener("click", toggleDisplay(this), true)</script>')
+        # self.write(f"<img id='{id}A' src='./images/tree_closed.gif'/><span>{name}</span>")
+        # self.write(f'<script>document.getElementById("{id}A").addEventListener("click", displayMarkdown("{path}"), true)</script>')
+ 
+
+    def markdownSection(self,id,path,padding):
         name = self.sanitizeName(os.path.basename(path))
         path = self.sanatizeMarkdown(path)
-        self.openDiv(f"<div id='{id}' onclick='toggleDisplay(this);' class='section' >")
+        self.openDiv(f"<div id='{id}' onclick='toggleDisplay2(this);' class='subsection' style='padding-left:{padding}%;'>")
         self.write(f"<img id='{id}A' src='./images/tree_closed.gif'/><span onclick='displayMarkdown(\"{path}\");'>{name}</span>")
         self.openDiv(f"<div id='{id}B' style='display:none;'>")
 
-    def fileSection(self,id,path):
+
+        # self.openDiv(f"<div id='{id}' class='section' >")
+        # self.write(f'<script>document.getElementById("{id}").addEventListener("click", toggleDisplay(this), true)</script>')
+        # self.write(f"<img id='{id}A' src='./images/tree_closed.gif'/><span onclick='display(\"{path}\";'>{name}</span>")
+        # self.write(f'<script>document.getElementById("{id}A").addEventListener("click", display("{path}"), true)</script>')
+
+
+    def fileSection(self,id,path,padding):
         name = self.sanitizeName(os.path.basename(path))
         path = self.sanitizePath(path)
-        self.openDiv(f"<div id='{id}' onclick='toggleDisplay(this);' class='section' >")
-        self.write(f"<img id='{id}A' src='./images/tree_closed.gif'/><span onclick='display(\"{path}\");'>{name}</span>")
+        self.openDiv(f"<div id='{id}' onclick='toggleDisplay(this);' class='subsection' style='padding-left:{padding}%;'>")
+        self.write(f"<img id='{id}A' src='./images/tree_closed.gif'/><span onclick='display(\"{path}\",true);'>{name}</span>")
         self.openDiv(f"<div id='{id}B' style='display:none;'>")
 
-    def openSection(self,path):
+    def openSection(self,path,padding):
         id = self.getID()
         if os.path.isdir(path):
-            self.directorySection(id,path)
+            self.directorySection(id,path,padding)
         else: 
             path = os.path.realpath(path) if os.path.islink(path) else path
             if path[-3:] == '.md':
-               self.markdownSection(id,path)
+               self.markdownSection(id,path,padding)
             else:
-               self.fileSection(id,path)     
+               self.fileSection(id,path,padding)     
 
     def closeSection(self,path):
         self.closeDiv()
@@ -460,7 +498,6 @@ class Generator:
     def addEntry(self,path):
         path = os.path.realpath(path) if os.path.islink(path) else path
         name = self.sanitizeName(os.path.basename(path)) 
-        path = self.sanitizePath(path)        
         if path[-3:] == '.md':
             path =  self.sanatizeMarkdown(path)
             function = 'displayMarkdown'
@@ -480,22 +517,116 @@ class Generator:
         file = os.path.join(path,'index.html')
         with open(file, "w") as self.file:
             self.writePrologue(self.title)
-            self.processSection(os.path.join(path,"Library"))
+            self.processLibrary(path)
             self.writeEpilogue()
  
-    def processSection(self,path):
-        self.recursiveEnter(path)
-        files = self.getSortedDirectoryContent(path)
-        for name in files:
-            entry = os.path.join(path,name)           
-            if re.match('[0-9a-zA-Z]00-',name) or os.path.isdir(entry):
-                self.openSection(entry)
-                if os.path.isdir(entry):
-                    self.processSection(entry)
-            else:  
-                self.addEntry(entry)
+    def processLibrary(self,path):
+        """ Library Structure
+
+        The top level,
         
-        self.closeSection(path)
-        self.recursiveExit(path)
-                
+        """
+        path = os.path.join(path,"Library")
+        files = self.getSortedDirectoryContent(path)
+        if len(files) > 0:
+            for name in files:
+                self.processSection(os.path.join(path,name),0)
+
+
+    def processSection(self,path,padding):
+        self.recursiveEnter('')
+        files = self.getSortedDirectoryContent(path)
+        if len(files) > 0:
+            firstEntry = os.path.join(path,files[0])
+            if re.match('000-',files[0]) and os.path.isfile(firstEntry): 
+                self.openSection(firstEntry,padding)
+                files = files[1:]
+            else:
+                self.openSection(path,padding)
+
+            for name in files:
+                entry = os.path.join(path,name) 
+                if os.path.isfile(entry):
+                    self.addEntry(entry)
+                else:            
+                    self.processSection(entry,self.padding)
+
+            self.closeSection('')
+
+        self.recursiveExit('') 
+
+
+    # def processSection(self, path):
+             
+    #         for i in range(len(files)-1):
+    #             if re.match('[0-9a-zA-Z]00-',files[i]) and os.path.isfile(os.path.join(path,files[i])):
+    #                 if files[i][0] != files[i+1][0]:
+    #                     raise Exception("Illegal structure, After sorting a file section header must be followed by a directory with the same section prefix.")        
+
+    #         for i in range(len(files)):
+    #             if i == 0 and re.match('[0-9a-zA-Z]00-',files[i]):
+    #                 entry = os.path.join(path,files[i]) 
+    #                 self.openSection(entry)
+    #                 if os.path.isfile(entry):
+    #                     continue    
+    #                 else:
+                        
+    #             else:
+    #                 entry = os.path.join(path,files[i]) 
+    #                 if os.path.isfile(entry):
+    #                     self.addEntry(entry)
+    #                 else:    
+    #                     self.processSection(entry)
+
+     
+    def processSubSection(self,path):
+        pass
+
+
+
+    #------------------------------------------------------------------------------------    
+
+
+
+                # if name[0] != section:
+                #     if name[0] != '0':
+                #         self.closeSection(path)
+                #         section = name[0] 
+
+    # def processSectionx(self,path):
+    #      files = self.getSortedDirectoryContent(path)
+    #     #
+    #     # Validate structure at current level
+    #     #
+    #     for i in range(len(files)-1):
+    #         if re.match('[0-9a-zA-Z]00-',files[i]) and os.path.isfile(os.path.join(path,files[i])):
+    #             if files[i][0] != files[i+1][0]:
+    #                 raise Exception("Illegal structure, After sorting a file section header must be followed by a directory with the same section prefix.")        
+        
+    #     section = '-'
+    #     for i in range(len(files)):
+    #         name = files[i]
+    #         entry = os.path.join(path,name)   
+    #         #
+    #         # Section headers have the prefix x00- where x in [0-9a-zA-Z]
+    #         #         
+    #         if re.match('[0-9a-zA-Z]00-',name):
+    #             if os.path.isdir(entry):
+    #                 self.openSection(entry)
+    #                 self.processSubSection(entry)                    
+    #             else:
+    #                 self.openSection(entry)
+
+
+    #         else:  
+    #             self.addEntry(entry)
+        
+    #     self.closeSection(path)
+       
+
+    #
+    #     # self.openSection(entry)
+    #     pass
+
+
 Generator()
